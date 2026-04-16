@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Requisitions Calendar</title>
+    <style>
+        :root {
+            --primary: #E8C11E;
+            --bg-color: #f8fafc;
+            --border-color: #e2e8f0;
+            --slot-hover: #dbeafe;
+            --booked-bg: #FEFCBF;
+            --lunch-bg: #f1f5f9;
+            --break-bg: #f1f5f9; 
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(5, 1fr);
+            gap: 1px;
+            background-color: var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .calendar-cell {
+            background-color: white;
+            padding: 8px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+            font-size: 0.9em;
+            overflow-y: auto;
+            -ms-overflow-style: none;  
+            scrollbar-width: none;  
+        }
+
+        .calendar-cell::-webkit-scrollbar {
+            display: none;
+        }
+
+        .header-cell {
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            min-height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .time-label {
+            background-color: var(--bg-color);
+            font-weight: bold;
+            font-size: 0.8em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bookable-slot {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .bookable-slot:hover {
+            background-color: var(--slot-hover);
+        }
+
+        .lunch-slot {
+            background-color: var(--lunch-bg);
+            font-weight: bold;
+            color: #64748b;
+            grid-column: 2 / -1; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .break-slot {
+            background-color: var(--break-bg);
+            font-weight: bold;
+            color: #64748b;
+            grid-column: 2 / -1; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .booking-card {
+            background-color: var(--booked-bg);
+            border-left: 4px solid var(--primary);
+            padding: 6px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 0.85em;
+            text-align: left;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .booking-card:hover {
+            background-color: #93c5fd;
+        }
+
+        .booking-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .booking-subject {
+            font-size: 0.8em;
+            color: #475569;
+        }
+
+        .add-hint {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: auto; 
+            padding: 4px;
+            width: 100%;
+        }
+
+        .add-hint:hover {
+            background-color: var(--slot-hover);
+            border-radius: 4px;
+        }
+
+        .modal {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .submit-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .submit-btn:hover {
+            background-color: #D4AF1A;
+        }
+
+        .slot-info {
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>Science Requisitions</h2>
+    </header>
+
+    <div class="calendar-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <button id="prevWeekBtn" style="padding: 8px 16px; cursor: pointer; border: 1px solid #ccc; background: #f9f9f9; border-radius: 4px; font-weight: bold;">&larr; Previous Week</button>
+            <h2 id="currentWeekLabel" style="margin: 0; font-size: 1.2rem; color: #333;">Current Week</h2>
+            <button id="nextWeekBtn" style="padding: 8px 16px; cursor: pointer; border: 1px solid #ccc; background: #f9f9f9; border-radius: 4px; font-weight: bold;">Next Week &rarr;</button>
+        </div>
+        <div id="calendar" class="calendar-grid"></div>
+    </div>
+
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3 id="modalTitle">Book Practical</h3>
+            <p id="slotInfo" class="slot-info"></p>
+            
+            <form id="bookingForm">
+                <input type="hidden" id="slotId">
+                <input type="hidden" id="bookingIndex" value="-1">
+                
+                <div class="form-group">
+                    <label for="title">Title of Practical:</label>
+                    <input type="text" id="title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Subject:</label>
+                    <select id="subject" required>
+                        <option value="">Select a subject...</option>
+                        <option value="Biology">Biology</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Science">General Science</option>
+                    </select>
+                </div>
+              
+                <div class="form-group">
+                    <label for="teacher">Teacher:</label>
+                    <select id="teacher" required>
+                        <option value="">Select name...</option>
+                        <option value="Teacher A">Teacher A</option>
+                        <option value="Teacher B">Teacher B</option>  
+                        <option value="Teacher C">Teacher C</option>
+                        <option value="Teacher D">Teacher D</option>
+                        <option value="Teacher E">Teacher E</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="groups">Number of Groups:</label>
+                    <input type="number" id="groups" min="1" max="15" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="equipment">Equipment Needed:</label>
+                    <textarea id="equipment" rows="3" placeholder="List glassware, hardware, etc."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="chemicals">Chemicals Needed:</label>
+                    <textarea id="chemicals" rows="3" placeholder="List chemicals and concentrations..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button type="button" id="deleteBtn" class="delete-btn" style="display: none; background-color: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Delete</button>
+                    <button type="submit" class="submit-btn" style="flex-grow: 1;">Save Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const calendar = document.getElementById("calendar");
+        const modal = document.getElementById("bookingModal");
+        const closeBtn = document.querySelector(".close-btn");
+        const bookingForm = document.getElementById("bookingForm");
+
+        const periods = ["P1", "P2", "P3", "Break", "P4", "P5", "Lunch", "P6", "P7", "P8"];
+        let bookings = {};
+
+        // REPLACE THIS WITH YOUR DEPLOYED GOOGLE APPS SCRIPT URL
+        const WEB_APP_URL = "YOUR_APPS_SCRIPT_URL_HERE";
+
+        function getMonday(d) {
+            d = new Date(d);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+            return new Date(d.setDate(diff));
+        }
+
+        let currentWeekStart = getMonday(new Date());
+
+        function getYYYYMMDD(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`; 
+        }
+
+        function getDisplayDate(dateObj) {
+            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            return `${days[dateObj.getDay()]} ${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+        }
+
+        document.getElementById('prevWeekBtn').addEventListener('click', () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            buildCalendar();
+        });
+
+        document.getElementById('nextWeekBtn').addEventListener('click', () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            buildCalendar();
+        });
+
+        function buildCalendar() {
+            calendar.innerHTML = '';
+            const weekDates = [];
+            for (let i = 0; i < 5; i++) {
+                let d = new Date(currentWeekStart);
+                d.setDate(d.getDate() + i);
+                weekDates.push(d);
+            }
+
+            document.getElementById('currentWeekLabel').innerText = `Week of ${weekDates[0].toLocaleDateString()}`;
+            calendar.appendChild(createCell('', 'header-cell')); 
+            
+            weekDates.forEach(dateObj => {
+                calendar.appendChild(createCell(getDisplayDate(dateObj), 'header-cell'));
+            });
+
+            periods.forEach(period => {
+                calendar.appendChild(createCell(period, 'calendar-cell time-label'));
+
+                if (period === "Lunch") {
+                    const lunchCell = createCell("LUNCH", "calendar-cell lunch-slot");
+                    calendar.appendChild(lunchCell);
+                } 
+                else if (period === "Break") {
+                    const breakCell = createCell("BREAK", "calendar-cell break-slot");
+                    calendar.appendChild(breakCell);
+                } 
+                else {
+                    weekDates.forEach(dateObj => {
+                        const dateStr = getYYYYMMDD(dateObj);
+                        const slotId = `${dateStr}-${period}`;
+                        const displayDay = getDisplayDate(dateObj); 
+
+                        if (!bookings[slotId]) bookings[slotId] = [];
+                        const cell = createCell('', 'calendar-cell bookable-slot');
+
+                        bookings[slotId].forEach((booking, index) => {
+                            const card = document.createElement("div");
+                            card.className = "booking-card";
+                            card.innerHTML = `
+                                <div class="booking-title">${booking.title}</div>
+                                <div class="booking-subject">${booking.subject}</div>
+                            `;
+                            card.onclick = (e) => {
+                                e.stopPropagation();
+                                openModal(slotId, displayDay, period, index);
+                            };
+                            cell.appendChild(card);
+                        });
+
+                        const addHint = document.createElement("div");
+                        addHint.className = "add-hint";
+                        addHint.innerText = "+ Add Practical";
+                        cell.appendChild(addHint);
+                        cell.onclick = () => openModal(slotId, displayDay, period, -1);
+                        calendar.appendChild(cell);
+                    });
+                }
+            });
+        }
+
+        function createCell(content, className) {
+            const div = document.createElement("div");
+            div.className = className;
+            div.innerText = content;
+            return div;
+        }
+
+        function openModal(slotId, displayDay, period, index) {
+            if (index === -1) { 
+                const datePart = slotId.substring(0, 10); 
+                const todayStr = getYYYYMMDD(new Date()); 
+                if (datePart < todayStr) {
+                    alert("You cannot book practicals in the past!");
+                    return; 
+                }
+            }
+
+            document.getElementById("slotId").value = slotId;
+            document.getElementById("bookingIndex").value = index;
+            document.getElementById("modalTitle").innerText = index >= 0 ? "Edit Practical" : "Book Practical";
+            document.getElementById("slotInfo").innerText = `${displayDay} - ${period}`;
+
+            if (index >= 0) {
+                const b = bookings[slotId][index];
+                document.getElementById("title").value = b.title;
+                document.getElementById("subject").value = b.subject;
+                document.getElementById("teacher").value = b.teacher;
+                document.getElementById("groups").value = b.groups;
+                document.getElementById("equipment").value = b.equipment;
+                document.getElementById("chemicals").value = b.chemicals;
+            } else {
+                bookingForm.reset();
+            }
+
+            document.getElementById("deleteBtn").style.display = index >= 0 ? "block" : "none";
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        closeBtn.addEventListener("click", closeModal);
+        window.addEventListener("click", (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        bookingForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const submitBtn = bookingForm.querySelector(".submit-btn");
+            if (submitBtn.disabled) return;
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Saving...";
+
+            const slotId = document.getElementById("slotId").value;
+            const index = parseInt(document.getElementById("bookingIndex").value);
+
+            let id = (index >= 0) ? bookings[slotId][index].id : Date.now().toString();
+
+            const bookingData = {
+                id: id,
+                slotId: slotId,
+                title: document.getElementById("title").value,
+                subject: document.getElementById("subject").value,
+                teacher: document.getElementById("teacher").value,
+                groups: document.getElementById("groups").value,
+                equipment: document.getElementById("equipment").value,
+                chemicals: document.getElementById("chemicals").value
+            };
+
+            if (index >= 0) {
+                bookings[slotId][index] = bookingData;
+            } else {
+                bookings[slotId].push(bookingData);
+            }
+
+            buildCalendar();
+
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify(bookingData),
+                headers: { "Content-Type": "text/plain;charset=utf-8" }
+            })
+            .then(() => {
+                closeModal();
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Save Booking";
+            })
+            .catch(() => {
+                alert("Error saving.");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Save Booking";
+            });
+        });
+
+        document.getElementById("deleteBtn").addEventListener("click", () => {
+            if (!confirm("Delete this booking?")) return;
+            const deleteBtn = document.getElementById("deleteBtn");
+            deleteBtn.innerText = "Deleting...";
+            deleteBtn.disabled = true;
+
+            const slotId = document.getElementById("slotId").value;
+            const index = parseInt(document.getElementById("bookingIndex").value);
+            const booking = bookings[slotId][index];
+
+            fetch(WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "delete", id: booking.id }),
+                headers: { "Content-Type": "text/plain;charset=utf-8" }
+            })
+            .then(() => {
+                bookings[slotId].splice(index, 1);
+                buildCalendar();
+                closeModal();
+            })
+            .catch(() => {
+                alert("Error deleting booking.");
+            })
+            .finally(() => {
+                deleteBtn.innerText = "Delete";
+                deleteBtn.disabled = false;
+            });
+        });
+
+        function loadBookings() {
+            buildCalendar(); 
+            if (WEB_APP_URL === "YOUR_APPS_SCRIPT_URL_HERE") return;
+
+            fetch(WEB_APP_URL)
+            .then(res => res.json())
+            .then(data => {
+                bookings = {};
+                data.forEach(item => {
+                    if (!bookings[item.slotId]) bookings[item.slotId] = [];
+                    bookings[item.slotId].push(item);
+                });
+                buildCalendar();
+            })
+            .catch(error => console.error("Error loading data:", error));
+        }
+
+        loadBookings();
+    </script>
+</body>
+</html>
