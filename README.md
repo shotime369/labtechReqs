@@ -4,9 +4,7 @@ How to create a school science practical booking system using Google apps only
 ### Setup Instructions
 
 1.  **Prepare the Spreadsheet** Set up a Google Sheet and navigate to `Extensions > Apps Script`. Add the API code required to link the Sheet with your Google Sites calendar.
-<p align="center">
-  <img src="./screenshots/API.png" width="500">
-</p>
+<img src="/screenshots/API.png" width="500">
 
 2.  **Deploy the Script** You need to **Deploy** the script now. Copy the URL found under **Manage Deployments**.  
     > **warning:** Deployment is kind of a PITA and often this is the part that will go wrong. If the system breaks, double-check that you have the correct version deployed and that the URL matches exactly.
