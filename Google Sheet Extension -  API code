@@ -1,0 +1,76 @@
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  var bookings = [];
+  
+  // Loop through rows (skipping the header row)
+  for (var i = 1; i < data.length; i++) {
+    bookings.push({
+      id: data[i][0],
+      slotId: data[i][1],
+      title: data[i][2],
+      subject: data[i][3],
+      teacher: data[i][4],
+      groups: data[i][5],
+      equipment: data[i][6],
+      chemicals: data[i][7]
+    });
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(bookings))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  var sheetData = sheet.getDataRange().getValues();
+  
+  // ==========================
+  // DELETE SCENARIO
+  // ==========================
+  if (data.action === "delete") {
+    // Look for the row with the matching ID and delete it
+    for (var i = 1; i < sheetData.length; i++) {
+      if (sheetData[i][0] == data.id) {
+        sheet.deleteRow(i + 1); // +1 because array is 0-indexed, sheet is 1-indexed
+        return ContentService.createTextOutput("Deleted").setMimeType(ContentService.MimeType.TEXT);
+      }
+    }
+  } 
+  
+  // ==========================
+  // SAVE / EDIT SCENARIO
+  // ==========================
+  else {
+    var isEdit = false;
+    
+    // Check if we are editing an existing booking
+    for (var i = 1; i < sheetData.length; i++) {
+      if (sheetData[i][0] == data.id) {
+        // Overwrite that specific row
+        sheet.getRange(i + 1, 1, 1, 8).setValues([[
+          data.id, data.slotId, data.title, data.subject, data.teacher, data.groups, data.equipment, data.chemicals
+        ]]);
+        isEdit = true;
+        break;
+      }
+    }
+    
+    // If it wasn't an edit, it's a new booking, so append a new row
+    if (!isEdit) {
+      sheet.appendRow([
+        data.id, 
+        data.slotId, 
+        data.title, 
+        data.subject, 
+        data.teacher, 
+        data.groups, 
+        data.equipment, 
+        data.chemicals
+      ]);
+    }
+    
+    return ContentService.createTextOutput("Saved").setMimeType(ContentService.MimeType.TEXT);
+  }
+}
