@@ -14,10 +14,11 @@ How to create a school science practical booking system using Google apps only
             if (WEB_APP_URL === "YOUR_APPS_SCRIPT_URL_HERE") return;"></script>
     ```
 This is where you can customise your own calendar with teachers names, periods, breaks, colours etc.. 
-There are many browser based editors, I use https://playcode.io/ to get a live preview. 
+There are many browser based editors to get a live preview. 
 
 4.  Copy your final HTML code and paste it into your Google Sites page using `Embed > Embed Code`.
 
 ---
 
+**10-09-26** Trialling the software at work, at the time of writing the delete button does not seem to be functional.
 
